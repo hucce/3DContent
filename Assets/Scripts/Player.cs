@@ -19,29 +19,42 @@ public class Player : MonoBehaviour
         float ver = Input.GetAxis("Vertical");
         float hor = Input.GetAxis("Horizontal");
 
-
-
         // 조건문 ver가 0이 아닌 경우
         // ex) 같다 ==, 같지 않은 경우 !=, 초과 <, 이상(같거나 많다) <=
-        if (ver != 0)
+        // || > 또는 or, and && > 그리고
+        if (ver != 0 || hor != 0)
         {
-            Vector3 moveVector = new Vector3();
-            moveVector.x = hor * moveSpeed * Time.deltaTime;
-            moveVector.z = ver * moveSpeed * Time.deltaTime;
-            
-            transform.position = transform.position + moveVector;
-        }
-        else if(hor != 0)
-        {
+            GetComponent<Animator>().SetBool("isMove", true);
+
             Vector3 moveVector = new Vector3();
             moveVector.x = hor * moveSpeed * Time.deltaTime;
             moveVector.z = ver * moveSpeed * Time.deltaTime;
 
             transform.position = transform.position + moveVector;
+
+            Vector3 checkVector = new Vector3();
+            if(moveVector != checkVector)
+            {
+                transform.forward = moveVector;
+            }
         }
         else
         {
-
+            GetComponent<Animator>().SetBool("isMove", false);
         }
+
+
+
+
+
+
+
+        bool att = Input.GetButtonDown("Fire1");
+
+        if (att == true)
+        {
+            GetComponent<Animator>().SetTrigger("isAttack");
+        }
+
     }
 }
