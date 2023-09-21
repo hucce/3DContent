@@ -7,6 +7,7 @@ TagManager:
   - PlayerSword
   - ZombieHand
   - Zombie
+  - Manager
   layers:
   - Default
   - TransparentFX

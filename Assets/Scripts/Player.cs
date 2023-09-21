@@ -14,6 +14,9 @@ public class Player : MonoBehaviour
 
     public float attackSecond = 1;
 
+    public float hitSecond = 1;
+
+    GameObject manager = null;
 
     public enum State
     {
@@ -24,12 +27,12 @@ public class Player : MonoBehaviour
     void Start()
     {
         animator = GetComponent<Animator>();
+        manager = GameObject.FindGameObjectWithTag("Manager");
     }
 
     // Update is called once per frame
     void Update()
     {
-
         Move();
         Attack();
     }
@@ -78,7 +81,7 @@ public class Player : MonoBehaviour
 
     IEnumerator CoAttack()
     {
-        if(state == State.Idle)
+        if(state == State.Idle || state == State.Move)
         {
             bool att = Input.GetButtonDown("Fire1");
 
@@ -91,9 +94,9 @@ public class Player : MonoBehaviour
 
                 // 일정 시간동안 대기한다.
                 yield return new WaitForSeconds(attackSecond);
+
                 // yield return () null > 1프레임 대기한다.
                 //new WaitForSeconds 특정 초를 대기한다.
-
                 state = State.Idle;
             }
         }
@@ -109,29 +112,53 @@ public class Player : MonoBehaviour
 
     private void Hit()
     {
-        // 맞았으면 피격 상태로 변경
-        state = State.Hit;
+        StartCoroutine(CoHit());
+    }
 
-        // HP가 -가 된다. hp = hp-상대방의 공격력
-        HP = HP - 10;
+    IEnumerator CoHit()
+    {
+        if(state != State.Hit || state != State.Death)
+        {
+            // 맞았으면 피격 상태로 변경
+            state = State.Hit;
 
-        // 만약 HP가 0이하라면 죽어야한다.
-        if (HP <= 0)
-        {
-            Death();
-        }
-        else
-        {
-            // 애니메이션 출력(피격)
-            animator.SetTrigger("isHit");
+            // HP가 -가 된다. hp = hp-상대방의 공격력
+            HP = HP - 10;
+
+            // 만약 HP가 0이하라면 죽어야한다.
+            if (HP <= 0)
+            {
+                Death();
+            }
+            else
+            {
+                // 애니메이션 출력(피격)
+                animator.SetTrigger("isHit");
+
+                // 피격초까지 대기
+                yield return new WaitForSeconds(hitSecond);
+
+                // 다 맞았으면 대기 상태로 돌리기
+                state = State.Idle;
+            }
         }
     }
 
     private void Death()
     {
+        StartCoroutine(CoDeath());
+    }
+
+    IEnumerator CoDeath()
+    {
         //죽었으면 죽음 상태로 변경
         state = State.Death;
 
         animator.SetBool("isDeath", true);
+
+        // 일정 시간 이후에 게임 오버 GUI를 보인다.
+        yield return new WaitForSeconds(2);
+
+        manager.GetComponent<GUIManager>().ShowGameOver();
     }
 }

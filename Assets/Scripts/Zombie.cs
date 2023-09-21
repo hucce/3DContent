@@ -6,14 +6,23 @@ using UnityEngine.AI;
 public class Zombie : MonoBehaviour
 {
     Animator animator = null;
-    public GameObject playerObject = null;
+
+    // 플레이어 캐릭터
+    private GameObject playerObject = null;
     public float checkDistance = 5;
     public float attackDistance = 2;
     public int HP = 100;
 
+    Player.State state = Player.State.Idle;
+
+    public float attackSecond = 1;
+
+    public float hitSecond = 1;
+
     // Start is called before the first frame update
     void Start()
     {
+        playerObject = GameObject.FindGameObjectWithTag("Player");
         animator = GetComponent<Animator>();
     }
 
@@ -46,18 +55,45 @@ public class Zombie : MonoBehaviour
         {
             // 다시 거리가 멀어졌다면 혹은 원래부터 거리가 멀었다면 move애니메이션을 false로 만든다.
             animator.SetBool("isMove", false);
+            state = Player.State.Idle;
         }
     }
 
     private void Move()
     {
-        animator.SetBool("isMove", true);
-        GetComponent<NavMeshAgent>().destination = playerObject.transform.position;
+        // 대기상태일 때만 이동
+        if(state == Player.State.Idle || state == Player.State.Move)
+        {
+            GetComponent<NavMeshAgent>().enabled = true;
+            state = Player.State.Move;
+            animator.SetBool("isMove", true);
+            GetComponent<NavMeshAgent>().destination = playerObject.transform.position;
+        }
     }
 
-    private void Attack()
+    void Attack()
     {
-        animator.SetTrigger("isAttack");
+        StartCoroutine(CoAttack());
+    }
+
+    IEnumerator CoAttack()
+    {
+        if (state == Player.State.Idle || state == Player.State.Move)
+        {
+            // 이동을 멈춘다.
+            GetComponent<NavMeshAgent>().enabled = false;
+
+            state = Player.State.Attack;
+            animator.SetBool("isMove", false);
+            animator.SetTrigger("isAttack");
+
+            // 일정 시간동안 대기한다.
+            yield return new WaitForSeconds(attackSecond);
+
+            // yield return () null > 1프레임 대기한다.
+            //new WaitForSeconds 특정 초를 대기한다.
+            state = Player.State.Idle;
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -70,24 +106,41 @@ public class Zombie : MonoBehaviour
 
     private void Hit()
     {
-        // HP가 -가 된다. hp = hp-상대방의 공격력
-        HP = HP - 10;
+        StartCoroutine(CoHit());
+    }
 
-        // 만약 HP가 0이하라면 죽어야한다.
-        if (HP <= 0)
+    IEnumerator CoHit()
+    {
+        if (state != Player.State.Hit || state != Player.State.Death)
         {
-            Death();
-        }
-        else
-        {
-            // 애니메이션 출력(피격)
-            animator.SetTrigger("isHit");
-        }
+            // 맞았으면 피격 상태로 변경
+            state = Player.State.Hit;
 
+            // HP가 -가 된다. hp = hp-상대방의 공격력
+            HP = HP - 10;
+
+            // 만약 HP가 0이하라면 죽어야한다.
+            if (HP <= 0)
+            {
+                Death();
+            }
+            else
+            {
+                // 애니메이션 출력(피격)
+                animator.SetTrigger("isHit");
+
+                // 피격초까지 대기
+                yield return new WaitForSeconds(hitSecond);
+
+                // 다 맞았으면 대기 상태로 돌리기
+                state = Player.State.Idle;
+            }
+        }
     }
 
     private void Death()
     {
         animator.SetBool("isDeath", true);
+        state = Player.State.Death;
     }
 }
