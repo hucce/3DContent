@@ -19,6 +19,8 @@ public class Zombie : MonoBehaviour
 
     public float hitSecond = 1;
 
+    public int attackDamage = 10;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -80,6 +82,8 @@ public class Zombie : MonoBehaviour
     {
         if (state == Player.State.Idle || state == Player.State.Move)
         {
+            GetComponent<AudioSource>().Play();
+
             // 이동을 멈춘다.
             GetComponent<NavMeshAgent>().enabled = false;
 
@@ -100,16 +104,18 @@ public class Zombie : MonoBehaviour
     {
         if(collision.gameObject.tag == "PlayerSword")
         {
-            Hit();
+            int playerAtt = collision.transform.root.GetComponent<Player>().attackDamage;
+
+            Hit(playerAtt);
         }
     }
 
-    private void Hit()
+    private void Hit(int _playerAtt)
     {
-        StartCoroutine(CoHit());
+        StartCoroutine(CoHit(_playerAtt));
     }
 
-    IEnumerator CoHit()
+    IEnumerator CoHit(int _playerAtt)
     {
         if (state != Player.State.Hit || state != Player.State.Death)
         {
@@ -117,7 +123,7 @@ public class Zombie : MonoBehaviour
             state = Player.State.Hit;
 
             // HP가 -가 된다. hp = hp-상대방의 공격력
-            HP = HP - 10;
+            HP = HP - _playerAtt;
 
             // 만약 HP가 0이하라면 죽어야한다.
             if (HP <= 0)
@@ -140,7 +146,21 @@ public class Zombie : MonoBehaviour
 
     private void Death()
     {
-        animator.SetBool("isDeath", true);
-        state = Player.State.Death;
+        StartCoroutine(CoDeath());
+    }
+
+    IEnumerator CoDeath()
+    {
+        if(state != Player.State.Death)
+        {
+            animator.SetBool("isDeath", true);
+            state = Player.State.Death;
+
+            yield return new WaitForSeconds(1);
+
+            GameObject.FindGameObjectWithTag("Manager").GetComponent<Manager>().ZombieDeath();
+
+            GameObject.Destroy(gameObject);
+        }
     }
 }

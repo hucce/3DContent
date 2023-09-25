@@ -18,6 +18,8 @@ public class Player : MonoBehaviour
 
     GameObject manager = null;
 
+    public int attackDamage = 50;
+
     public enum State
     {
         Idle, Move, Attack, Hit, Death
@@ -106,16 +108,18 @@ public class Player : MonoBehaviour
     {
         if(collision.gameObject.tag == "ZombieHand")
         {
-            Hit();
+            int zombieAtt = collision.transform.root.GetComponent<Zombie>().attackDamage;
+
+            Hit(zombieAtt);
         }
     }
 
-    private void Hit()
+    private void Hit(int _zombieAtt)
     {
-        StartCoroutine(CoHit());
+        StartCoroutine(CoHit(_zombieAtt));
     }
 
-    IEnumerator CoHit()
+    IEnumerator CoHit(int _zombieAtt)
     {
         if(state != State.Hit || state != State.Death)
         {
@@ -123,7 +127,7 @@ public class Player : MonoBehaviour
             state = State.Hit;
 
             // HP가 -가 된다. hp = hp-상대방의 공격력
-            HP = HP - 10;
+            HP = HP - _zombieAtt;
 
             // 만약 HP가 0이하라면 죽어야한다.
             if (HP <= 0)
@@ -140,6 +144,8 @@ public class Player : MonoBehaviour
 
                 // 다 맞았으면 대기 상태로 돌리기
                 state = State.Idle;
+
+                manager.GetComponent<GUIManager>().ShowHP(HP);
             }
         }
     }
@@ -151,14 +157,17 @@ public class Player : MonoBehaviour
 
     IEnumerator CoDeath()
     {
-        //죽었으면 죽음 상태로 변경
-        state = State.Death;
+        if(state != State.Death)
+        {
+            //죽었으면 죽음 상태로 변경
+            state = State.Death;
 
-        animator.SetBool("isDeath", true);
+            animator.SetBool("isDeath", true);
 
-        // 일정 시간 이후에 게임 오버 GUI를 보인다.
-        yield return new WaitForSeconds(2);
+            // 일정 시간 이후에 게임 오버 GUI를 보인다.
+            yield return new WaitForSeconds(2);
 
-        manager.GetComponent<GUIManager>().ShowGameOver();
+            manager.GetComponent<GUIManager>().ShowGameOver();
+        }
     }
 }
